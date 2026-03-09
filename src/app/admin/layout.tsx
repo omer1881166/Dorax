@@ -17,7 +17,7 @@ export default function AdminLayout({
     const pathname = usePathname();
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        supabase.auth.getSession().then(({ data: { session } }: any) => {
             setSession(session);
             if (!session && pathname !== '/admin/login') {
                 router.push('/admin/login');
