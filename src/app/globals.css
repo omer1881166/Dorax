@@ -1,26 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+
+  --color-doraks-primary: #e11d48;
+  --color-doraks-orange: #ea580c;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg-app: #020617;
+  --bg-card: #0f172a;
+  --text-app: #f8fafc;
+  --text-muted: #94a3b8;
+  --border-app: #1e293b;
+  --accent-brand: #e11d48;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root.light {
+  --bg-app: #f4f6f8;
+  --bg-card: #fcfdfe;
+  --text-app: #1a202c;
+  --text-muted: #4a5568;
+  --border-app: #dae1e7;
+  --accent-brand: #ea580c;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark light;
+  color: var(--text-app);
+  background-color: var(--bg-app);
+  transition: background-color 0.2s ease, color 0.2s ease;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-smoothing: grayscale;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background-color: var(--bg-app);
+  color: var(--text-app);
+}
+
+/* Custom Scrollbar for Industrial Look */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }

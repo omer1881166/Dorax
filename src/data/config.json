@@ -1,0 +1,250 @@
+{
+  "categories": [
+    {
+      "id": "pdu",
+      "name": "Power Distribution Units (PDUs)",
+      "description": "High-efficiency power distribution for rack cabinets.",
+      "basePrice": 150,
+      "attributes": [
+        {
+          "id": "pdu_subtype",
+          "name": "PDU Project Type",
+          "type": "select",
+          "options": [
+            {
+              "id": "schuko",
+              "label": "Schuko",
+              "addedCost": 0
+            },
+            {
+              "id": "ups",
+              "label": "UPS",
+              "addedCost": 20
+            },
+            {
+              "id": "uk",
+              "label": "UK",
+              "addedCost": 15
+            },
+            {
+              "id": "c13",
+              "label": "C13",
+              "addedCost": 10
+            },
+            {
+              "id": "c13_locked",
+              "label": "C13 Locked",
+              "addedCost": 25
+            },
+            {
+              "id": "us_nema",
+              "label": "US Nema 5-20",
+              "addedCost": 30
+            }
+          ]
+        },
+        {
+          "id": "pdu_security",
+          "name": "Security Type",
+          "type": "select",
+          "options": [
+            {
+              "id": "on_off",
+              "label": "On / Off",
+              "addedCost": 0
+            },
+            {
+              "id": "unprotected",
+              "label": "Unprotected",
+              "addedCost": 0
+            },
+            {
+              "id": "v_automatic",
+              "label": "V-Automatic",
+              "addedCost": 15
+            },
+            {
+              "id": "button",
+              "label": "Button",
+              "addedCost": 10
+            },
+            {
+              "id": "emi",
+              "label": "EMI",
+              "addedCost": 25
+            },
+            {
+              "id": "surge_protector",
+              "label": "Surge Protector",
+              "addedCost": 35
+            },
+            {
+              "id": "leakage_breaker",
+              "label": "Leakage Circuit Breaker",
+              "addedCost": 45
+            },
+            {
+              "id": "vam",
+              "label": "VAM",
+              "addedCost": 60
+            },
+            {
+              "id": "multimeter",
+              "label": "Multimeter",
+              "addedCost": 75
+            }
+          ]
+        }
+      ],
+      "logic": []
+    },
+    {
+      "id": "fan_module",
+      "name": "Cooling & Fan Modules",
+      "description": "Active cooling solutions for server enclosures.",
+      "basePrice": 85,
+      "attributes": [
+        {
+          "id": "fan_count",
+          "name": "Number of Fans",
+          "type": "select",
+          "options": [
+            {
+              "id": "2",
+              "label": "2 Fans",
+              "addedCost": 0
+            },
+            {
+              "id": "4",
+              "label": "4 Fans",
+              "addedCost": 60
+            },
+            {
+              "id": "6",
+              "label": "6 Fans",
+              "addedCost": 110
+            }
+          ]
+        },
+        {
+          "id": "fan_type",
+          "name": "Fan Performance Type",
+          "type": "select",
+          "options": [
+            {
+              "id": "basic",
+              "label": "Basic Fan",
+              "addedCost": 0
+            },
+            {
+              "id": "pro",
+              "label": "Pro High-Flow Fan",
+              "addedCost": 30
+            },
+            {
+              "id": "smart",
+              "label": "Smart Variable Speed Fan",
+              "addedCost": 55
+            }
+          ]
+        },
+        {
+          "id": "control_module",
+          "name": "Control & Display Module",
+          "type": "select",
+          "options": [
+            {
+              "id": "analog",
+              "label": "Analog Thermostat",
+              "addedCost": 0
+            },
+            {
+              "id": "digital_basic",
+              "label": "Digital Basic Module",
+              "addedCost": 45
+            },
+            {
+              "id": "digital_pro",
+              "label": "Digital Pro (Remote Monitoring)",
+              "addedCost": 85
+            },
+            {
+              "id": "smart_module",
+              "label": "Smart Fan Logic Module",
+              "addedCost": 120
+            }
+          ]
+        }
+      ],
+      "logic": [
+        {
+          "id": "smart_fan_logic",
+          "trigger": {
+            "attributeId": "fan_type",
+            "value": "smart"
+          },
+          "action": "restrict",
+          "targetAttributeId": "control_module",
+          "allowedValues": [
+            "smart_module",
+            "digital_pro"
+          ],
+          "message": "Smart Variable Speed Fans require a compatible Digital Pro or Smart Module for PWM control."
+        }
+      ]
+    },
+    {
+      "id": "led_lighting",
+      "name": "LED Lighting Systems",
+      "description": "High-visibility rack and aisle lighting solutions.",
+      "basePrice": 45,
+      "attributes": [
+        {
+          "id": "light_color",
+          "name": "Lighting Temperature",
+          "type": "select",
+          "options": [
+            {
+              "id": "warm",
+              "label": "Warm White (3000K)",
+              "addedCost": 0
+            },
+            {
+              "id": "cool",
+              "label": "Cool White (6000K)",
+              "addedCost": 0
+            },
+            {
+              "id": "rgb",
+              "label": "RGB Programmable",
+              "addedCost": 40
+            }
+          ]
+        },
+        {
+          "id": "length",
+          "name": "Strip Length",
+          "type": "select",
+          "options": [
+            {
+              "id": "50cm",
+              "label": "50cm Strip",
+              "addedCost": 0
+            },
+            {
+              "id": "100cm",
+              "label": "100cm Strip",
+              "addedCost": 25
+            },
+            {
+              "id": "custom",
+              "label": "Custom Tailored",
+              "addedCost": 60
+            }
+          ]
+        }
+      ],
+      "logic": []
+    }
+  ]
+}
