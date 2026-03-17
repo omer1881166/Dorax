@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { useConfigStore } from '@/store/useConfigStore';
-import { Settings2, Info, ChevronLeft, ChevronRight, AlertTriangle, X } from 'lucide-react';
+import { Settings2, Info, ChevronLeft, ChevronRight, AlertTriangle, X, Layout } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PduLayoutDesigner } from './PduLayoutDesigner';
 
 export const Configurator: React.FC = () => {
     const {
@@ -17,7 +18,8 @@ export const Configurator: React.FC = () => {
         getActiveMessages,
         resetSelections,
         quantities,
-        setQuantity
+        setQuantity,
+        initPduLayout
     } = useConfigStore();
 
     const currentCategory = getSelectedCategory();
@@ -79,9 +81,12 @@ export const Configurator: React.FC = () => {
     const isOverLimit = isPduCategory && totalSocketCount > maxSockets;
     const [showLimitPopup, setShowLimitPopup] = useState(false);
 
+    const layoutConfirmed = selections['_pdu_layout_confirmed'] === 'true';
+
     /*  PDU Step Logic (with conditional branching):
         1=orientation, 2=color of PDU, 3=sockets, 4=energy input, 5=cable type,
-        6=properties of cable (only if outer_case), 7=protection type  */
+        6=properties of cable (only if outer_case), 7=protection type, 8=calculation,
+        9=layout designer  */
     let pduStep = 1;
     if (pduOrientation) pduStep = 2;
     if (pduOrientation && pduColor) pduStep = 3;
@@ -96,7 +101,7 @@ export const Configurator: React.FC = () => {
         }
     }
     if (pduStep >= 7 && hasAnyProtection && protectionConfirmed) pduStep = 8; // Calculation
-    if (pduStep >= 8 && hasAnyCalculation && calculationConfirmed) pduStep = 8; // Calculation is the final step
+    if (pduStep >= 8 && hasAnyCalculation && calculationConfirmed) pduStep = 9; // Layout Designer
 
 
     const showOrientationSelection = isPduCategory && pduStep === 1;
@@ -107,7 +112,9 @@ export const Configurator: React.FC = () => {
     const showCablePropertiesSelection = isPduCategory && pduStep === 6;
     const showSecuritySelection = isPduCategory && pduStep === 7 && !protectionConfirmed;
     const showCalculationSelection = isPduCategory && pduStep === 8 && !calculationConfirmed;
-    const pduFlowComplete = isPduCategory && pduStep === 8 && hasAnyCalculation && calculationConfirmed && !isCalculationOverLimit;
+    const isIntermediateComplete = isPduCategory && pduStep === 9 && !selections['_pdu_layout_confirmed'];
+    const showLayoutDesignerSelection = isPduCategory && pduStep === 9 && selections['_pdu_layout_confirmed'] === 'false';
+    const pduFlowComplete = isPduCategory && pduStep === 9 && selections['_pdu_layout_confirmed'] === 'true';
 
     // Dynamic step count (7 if Non Cable, 8 if Outer Case)
     const totalSteps = pduCableType === '00000000-0000-0000-0000-000000000501' ? 7 : 8;
@@ -212,6 +219,10 @@ export const Configurator: React.FC = () => {
                                     } else if (pduStep === 5) {
                                         setSelection('00000000-0000-0000-0000-000000000105', '');
                                         setSelection('00000000-0000-0000-0000-000000000104', '');
+                                    } else if (pduStep === 9) {
+                                        setSelection('_pdu_layout_confirmed', '');
+                                    } else if (pduStep === 8) {
+                                        setSelection('_pdu_calculation_confirmed', '');
                                     } else if (pduStep === 4) {
                                         setSelection('_pdu_sockets_confirmed', '');
                                         setSelection('00000000-0000-0000-0000-000000000104', '');
@@ -733,19 +744,58 @@ export const Configurator: React.FC = () => {
                                 </button>
                             </motion.div>
 
-                            /* ── PDU Complete ── */
-                        ) : pduFlowComplete ? (
+                        ) : isIntermediateComplete ? (
                             <motion.div
-                                key="pdu-complete"
+                                key="pdu-intermediate-complete"
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
-                                className="flex flex-col items-center justify-center p-12 rounded-2xl border-2 border-dashed border-[var(--accent-brand)]/30 bg-[var(--accent-brand)]/5"
+                                className="flex flex-col items-center justify-center p-12 rounded-3xl border-2 border-[var(--accent-brand)]/20 bg-[var(--accent-brand)]/5"
+                            >
+                                <div className="text-4xl mb-4 text-[var(--accent-brand)]">✨</div>
+                                <h3 className="text-xl font-black text-[var(--text-app)] uppercase tracking-wider text-center">Customize Your Module Layout</h3>
+                                <p className="text-sm text-[var(--text-muted)] mt-2 mb-8 text-center max-w-md font-medium">
+                                    Final technical step: Drag and reorder your sockets and protection modules into the exact physical arrangement you want on the PDU.
+                                </p>
+                                <button
+                                    onClick={() => {
+                                        initPduLayout();
+                                        setSelection('_pdu_layout_confirmed', 'false'); // Enter designer
+                                    }}
+                                    className="px-10 py-5 bg-[var(--accent-brand)] text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-orange-600/20 hover:brightness-110 transition-all active:scale-95 flex items-center gap-3"
+                                >
+                                    <Layout className="w-5 h-5" />
+                                    Open Designer →
+                                </button>
+                            </motion.div>
+                        ) : showLayoutDesignerSelection ? (
+                            <motion.div
+                                key="pdu-layout-designer"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                className="space-y-8"
+                            >
+                                <PduLayoutDesigner />
+                                <button
+                                    onClick={() => setSelection('_pdu_layout_confirmed', 'true')}
+                                    className="w-full py-5 rounded-2xl bg-[#10b981] text-white font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 transition-all duration-300 hover:brightness-110 shadow-xl shadow-emerald-600/20 active:scale-[0.98]"
+                                >
+                                    Confirm Layout & Finalize Configuration →
+                                </button>
+                            </motion.div>
+                        ) : pduFlowComplete ? (
+                            <motion.div
+                                key="pdu-complete-final"
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="flex flex-col items-center justify-center p-12 rounded-2xl border-2 border-dashed border-[#10b981]/30 bg-[#10b981]/5"
                             >
                                 <div className="text-4xl mb-4">✅</div>
-                                <h3 className="text-xl font-black text-[var(--text-app)] uppercase tracking-wider">Configuration Complete</h3>
-                                <p className="text-sm text-[var(--text-muted)] mt-2 text-center max-w-md">
-                                    Your PDU configuration is ready. Review your selections in the Live Quote panel and submit your official inquiry.
+                                <h3 className="text-xl font-black text-[var(--border-emerald)] uppercase tracking-wider">Configuration Optimized</h3>
+                                <p className="text-sm text-[var(--text-muted)] mt-2 text-center max-w-md font-medium">
+                                    Your custom PDU layout has been saved. Please review your quote in the panel and submit your inquiry for a formal technical proposal.
                                 </p>
                             </motion.div>
 

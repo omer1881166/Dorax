@@ -26,6 +26,7 @@ interface Order {
     status: string;
     selections: any;
     quantities: any;
+    layout: any[];
     category_id: string;
 }
 
@@ -46,7 +47,9 @@ export default function AdminOrders() {
             .select('*')
             .order('created_at', { ascending: false });
 
-        if (!error && data) {
+        if (error) {
+            console.error('Fetch Orders Error:', error);
+        } else if (data) {
             setOrders(data);
         }
         setLoading(false);
@@ -245,22 +248,50 @@ export default function AdminOrders() {
                                         </div>
 
                                         <div className="bg-white/5 rounded-3xl p-6 space-y-4">
-                                            {Object.entries(selectedOrder.selections).map(([key, val]) => (
-                                                <div key={key} className="flex justify-between items-center text-[11px]">
-                                                    <span className="font-black uppercase tracking-widest text-slate-500">{key.replace('pdu_', '')}</span>
-                                                    <span className="font-bold text-slate-200">{String(val)}</span>
-                                                </div>
-                                            ))}
-                                            {Object.entries(selectedOrder.quantities).length > 0 && (
-                                                <div className="pt-4 mt-4 border-t border-white/5 space-y-3">
-                                                    {Object.entries(selectedOrder.quantities).map(([key, count]) => (
-                                                        <div key={key} className="flex justify-between items-center text-[11px]">
-                                                            <span className="font-black uppercase tracking-widest text-[#ea580c]">Module Quant.</span>
-                                                            <span className="font-bold text-slate-200">ID: {key.slice(-8)} (x{count as number})</span>
-                                                        </div>
-                                                    ))}
+                                            {/* Layout Visualization for PDU */}
+                                            {selectedOrder.layout && selectedOrder.layout.length > 0 && (
+                                                <div className="mb-6 space-y-3">
+                                                    <span className="text-[10px] font-black text-[#ea580c] uppercase tracking-[0.15em] block border-b border-white/10 pb-2 mb-4">Physical Module Layout (Top → Bottom)</span>
+                                                    <div className="flex flex-col gap-1 border-l-2 border-[#ea580c]/30 pl-4">
+                                                        {selectedOrder.layout
+                                                            .sort((a, b) => a.position - b.position)
+                                                            .map((item, idx) => (
+                                                                <div key={idx} className="flex items-center gap-3 py-1 group/item">
+                                                                    <div className={`w-2 h-2 rounded-full ${
+                                                                        item.type === 'protection' ? 'bg-orange-500' : 
+                                                                        item.type === 'calculation' ? 'bg-emerald-500' : 'bg-blue-500'
+                                                                    }`} />
+                                                                    <span className="text-[10px] font-black text-slate-400 group-hover/item:text-white transition-colors">
+                                                                        Position {item.position + 1}: {item.label}
+                                                                    </span>
+                                                                </div>
+                                                            ))
+                                                        }
+                                                    </div>
                                                 </div>
                                             )}
+
+                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] block border-b border-white/10 pb-2 mb-2">Technical Selections</span>
+                                            {Object.entries(selectedOrder.selections).map(([key, val]) => {
+                                                // Skip confirm flags and layout confirm
+                                                if (key.startsWith('_')) return null;
+                                                
+                                                const label = key
+                                                    .replace('pdu_', '')
+                                                    .replace(/00000000-0000-0000-0000-000000000101/, 'Orientation')
+                                                    .replace(/00000000-0000-0000-0000-000000000102/, 'Color')
+                                                    .replace(/00000000-0000-0000-0000-000000000104/, 'Inlet')
+                                                    .replace(/00000000-0000-0000-0000-000000000105/, 'Cable');
+
+                                                return (
+                                                    <div key={key} className="flex justify-between items-center text-[11px] py-0.5">
+                                                        <span className="font-black uppercase tracking-widest text-slate-500">{label}</span>
+                                                        <span className="font-bold text-slate-200">
+                                                            {String(val).length > 20 ? String(val).slice(0, 17) + '...' : String(val)}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
 

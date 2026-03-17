@@ -12,6 +12,7 @@ export const PriceSummary: React.FC = () => {
         calculateTotalPrice,
         selectedCountry,
         quantities,
+        pduLayout,
         theme
     } = useConfigStore();
 
@@ -84,6 +85,7 @@ export const PriceSummary: React.FC = () => {
                     countryId: selectedCountry?.id,
                     selections,
                     quantities,
+                    layout: pduLayout,
                     totalPrice: verificationResult.serverPrice,
                     basePrice: verificationResult.basePrice,
                     regionalAdjustment: verificationResult.regionalAdjustment
@@ -91,12 +93,16 @@ export const PriceSummary: React.FC = () => {
             });
 
             const data = await response.json();
+            console.log('Submission Response:', data);
+            
             if (response.ok) {
                 setOrderSuccess(data.orderId);
             } else {
+                console.error('Submission Failed:', data.error);
                 setVerificationResult({ ...verificationResult, error: data.error || 'Failed to submit inquiry' });
             }
         } catch (err) {
+            console.error('Submission Network Error:', err);
             setVerificationResult({ ...verificationResult, error: 'Network error during submission' });
         } finally {
             setIsSubmitting(false);
@@ -105,8 +111,15 @@ export const PriceSummary: React.FC = () => {
 
     if (!category) return null;
 
-    // Internal PDU keys that should NOT be looked up in category attributes
-    const pduInternalKeys = ['pdu_orientation', 'pdu_color', 'pdu_security', 'pdu_cable_length', '_pdu_sockets_confirmed', 'pdu_energy_input', 'pdu_cable_type', 'pdu_case_type', 'pdu_case_color', 'pdu_case_length', 'pdu_cable_cross_section', '_pdu_cable_props_confirmed', '_pdu_protection_confirmed', '_pdu_calculation_confirmed'];
+    // Internal PDU keys that should NOT be looked up in category attributes automatically
+    const pduInternalKeys = [
+        '00000000-0000-0000-0000-000000000101', // Orientation
+        '00000000-0000-0000-0000-000000000102', // Color
+        '00000000-0000-0000-0000-000000000104', // Energy Input
+        '00000000-0000-0000-0000-000000000105', // Cable Type
+        'pdu_case_type', 'pdu_case_color', 'pdu_case_length', 'pdu_cable_cross_section', 
+        '_pdu_sockets_confirmed', '_pdu_cable_props_confirmed', '_pdu_protection_confirmed', '_pdu_calculation_confirmed', '_pdu_layout_confirmed'
+    ];
 
     // Hardcoded lookup maps for energy, security and cable length
     const energyInputMap: Record<string, { label: string; cost: number }> = {};
@@ -117,10 +130,9 @@ export const PriceSummary: React.FC = () => {
     // Populated from DB via useConfigStore
     category.attributes.forEach(attr => {
         attr.options.forEach(opt => {
-            if (attr.id === 'pdu_energy_input') energyInputMap[opt.id] = { label: opt.label, cost: opt.addedCost };
-            if (attr.id === 'pdu_security' || attr.name.toLowerCase().includes('protection')) securityMap[opt.id] = { label: opt.label, cost: opt.addedCost };
-            if (attr.id === 'pdu_calculation' || attr.name.toLowerCase().includes('calculation')) calculationMap[opt.id] = { label: opt.label, cost: opt.addedCost };
-            if (attr.id === 'pdu_cable_length') cableLengthMap[opt.id] = { label: opt.label, cost: opt.addedCost };
+            if (attr.id === '00000000-0000-0000-0000-000000000104') energyInputMap[opt.id] = { label: opt.label, cost: opt.addedCost };
+            if (attr.id === '00000000-0000-0000-0000-000000000106' || attr.name.toLowerCase().includes('protection')) securityMap[opt.id] = { label: opt.label, cost: opt.addedCost };
+            if (attr.id === '00000000-0000-0000-0000-000000000107' || attr.name.toLowerCase().includes('calculation')) calculationMap[opt.id] = { label: opt.label, cost: opt.addedCost };
         });
     });
 
@@ -138,23 +150,25 @@ export const PriceSummary: React.FC = () => {
         });
 
     // Add PDU orientation label
-    const orientationId = selections['pdu_orientation'];
+    const orientationId = selections['00000000-0000-0000-0000-000000000101'];
     if (orientationId) {
+        const opt = category.attributes.find(a => a.id === '00000000-0000-0000-0000-000000000101')?.options.find(o => o.id === orientationId);
         selectedOptionsBreakdown.push({
             name: 'PDU Type',
-            label: orientationId,
-            cost: 0,
+            label: opt?.label || orientationId,
+            cost: opt?.addedCost || 0,
             count: 1
         });
     }
 
     // Add PDU color
-    const colorId = selections['pdu_color'];
+    const colorId = selections['00000000-0000-0000-0000-000000000102'];
     if (colorId) {
+        const opt = category.attributes.find(a => a.id === '00000000-0000-0000-0000-000000000102')?.options.find(o => o.id === colorId);
         selectedOptionsBreakdown.push({
-            name: 'Color of PDU',
-            label: colorId.charAt(0).toUpperCase() + colorId.slice(1),
-            cost: 0,
+            name: 'PDU Color',
+            label: opt?.label || colorId,
+            cost: opt?.addedCost || 0,
             count: 1
         });
     }
@@ -176,7 +190,7 @@ export const PriceSummary: React.FC = () => {
     });
 
     // Add PDU energy input
-    const energyId = selections['pdu_energy_input'];
+    const energyId = selections['00000000-0000-0000-0000-000000000104'];
     if (energyId && energyInputMap[energyId]) {
         selectedOptionsBreakdown.push({
             name: 'Energy Input',
@@ -187,18 +201,21 @@ export const PriceSummary: React.FC = () => {
     }
 
     // Add Cable Type
-    const cableTypeId = selections['pdu_cable_type'];
+    const outerCaseId = '00000000-0000-0000-0000-000000000502';
+    const nonCableId = '00000000-0000-0000-0000-000000000501';
+    const cableTypeId = selections['00000000-0000-0000-0000-000000000105'];
+    
     if (cableTypeId) {
         selectedOptionsBreakdown.push({
-            name: 'Cable Type',
-            label: cableTypeId === 'outer_case' ? 'Outer Case' : 'Non Cable',
+            name: 'Cable Configuration',
+            label: cableTypeId === outerCaseId ? 'Outer Case' : 'Non Cable',
             cost: 0,
             count: 1
         });
     }
 
     // Add Properties Of Cable (if Outer Case)
-    if (cableTypeId === 'outer_case') {
+    if (cableTypeId === outerCaseId) {
         const cableProps = [
             { key: 'pdu_case_type', name: 'Type Of Case' },
             { key: 'pdu_case_color', name: 'Color' },
@@ -268,13 +285,22 @@ export const PriceSummary: React.FC = () => {
     };
 
     const visibleAttributes = getVisibleAttributes();
-    const hasOrientation = !isPduCategory || selections['pdu_orientation'];
-    const hasSockets = !isPduCategory || Object.values(quantities).some(q => q > 0);
     const standardAttrsComplete = visibleAttributes
         .filter(a => a.id !== 'pdu_subtype')
         .every(attr => selections[attr.id]);
 
-    const isComplete = hasOrientation && hasSockets && standardAttrsComplete;
+    const isPduComplete = isPduCategory && 
+        selections['00000000-0000-0000-0000-000000000101'] && // Orientation
+        selections['00000000-0000-0000-0000-000000000102'] && // Color
+        selections['_pdu_sockets_confirmed'] === 'true' &&
+        selections['00000000-0000-0000-0000-000000000104'] && // Energy
+        selections['00000000-0000-0000-0000-000000000105'] && // Cable
+        (selections['00000000-0000-0000-0000-000000000105'] !== '00000000-0000-0000-0000-000000000502' || selections['_pdu_cable_props_confirmed'] === 'true') &&
+        selections['_pdu_protection_confirmed'] === 'true' &&
+        selections['_pdu_calculation_confirmed'] === 'true' &&
+        selections['_pdu_layout_confirmed'] === 'true';
+
+    const isComplete = isPduCategory ? isPduComplete : standardAttrsComplete;
 
     return (
         <div className="w-full lg:w-96">

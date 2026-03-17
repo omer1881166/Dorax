@@ -50,6 +50,14 @@ export interface Category {
     logic: LogicRule[];
 }
 
+export interface SlotItem {
+    id: string;
+    optionId: string;
+    label: string;
+    type: 'socket' | 'protection' | 'calculation';
+    position: number;
+}
+
 interface ConfigState {
     categories: Category[];
     selectedCategoryId: string | null;
@@ -60,6 +68,7 @@ interface ConfigState {
     selectedCountry: Country | null;
     isLoading: boolean;
     error: string | null;
+    pduLayout: SlotItem[];
 
     // Actions
     setCategory: (categoryId: string) => void;
@@ -69,6 +78,8 @@ interface ConfigState {
     toggleTheme: () => void;
     setCountry: (countryId: string) => void;
     fetchData: () => Promise<void>;
+    setPduLayout: (layout: SlotItem[]) => void;
+    initPduLayout: () => void;
 
     // Derived helpers
     getSelectedCategory: () => Category | null;
@@ -88,6 +99,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     selectedCountry: null,
     isLoading: false,
     error: null,
+    pduLayout: [],
 
     fetchData: async () => {
         set({ isLoading: true, error: null });
@@ -234,12 +246,50 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
         }
     },
 
-    resetSelections: () => set({ selections: {}, quantities: {} }),
+    resetSelections: () => set({ selections: {}, quantities: {}, pduLayout: [] }),
 
     setQuantity: (optionId, quantity) => {
         set((state) => ({
             quantities: { ...state.quantities, [optionId]: Math.max(0, quantity) }
         }));
+    },
+
+    setPduLayout: (layout) => set({ pduLayout: layout }),
+
+    initPduLayout: () => {
+        const state = get();
+        const category = state.getSelectedCategory();
+        if (!category) return;
+
+        const SOCKET_ATTR = '00000000-0000-0000-0000-000000000103';
+        const PROT_ATTR = '00000000-0000-0000-0000-000000000106';
+        const CALC_ATTR = '00000000-0000-0000-0000-000000000107';
+
+        const slots: SlotItem[] = [];
+        let pos = 0;
+
+        const addSlots = (attrId: string, slotType: 'socket' | 'protection' | 'calculation') => {
+            const attr = category.attributes.find(a => a.id === attrId);
+            if (!attr) return;
+            attr.options.forEach(opt => {
+                const count = state.quantities[opt.id] || 0;
+                for (let i = 0; i < count; i++) {
+                    slots.push({
+                        id: `${opt.id}_${i}`,
+                        optionId: opt.id,
+                        label: opt.label,
+                        type: slotType,
+                        position: pos++
+                    });
+                }
+            });
+        };
+
+        addSlots(SOCKET_ATTR, 'socket');
+        addSlots(PROT_ATTR, 'protection');
+        addSlots(CALC_ATTR, 'calculation');
+
+        set({ pduLayout: slots });
     },
 
     getSelectedCategory: () => {
