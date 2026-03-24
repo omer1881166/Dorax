@@ -3,6 +3,7 @@ import { Outfit } from "next/font/google";
 import "./globals.css";
 import InstallPrompt from "@/components/InstallPrompt";
 import CountrySelector from "@/components/CountrySelector";
+import Maintenance from "@/components/Maintenance";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -27,23 +28,31 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const isMaintenanceMode = process.env.NEXT_PUBLIC_SITE_DISABLED === "true";
+
   return (
     <html lang="en" className={outfit.variable}>
       <body className="antialiased">
-        {children}
-        <InstallPrompt />
-        <CountrySelector />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js');
-                });
-              }
-            `,
-          }}
-        />
+        {isMaintenanceMode ? (
+          <Maintenance />
+        ) : (
+          <>
+            {children}
+            <InstallPrompt />
+            <CountrySelector />
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `
+                  if ('serviceWorker' in navigator) {
+                    window.addEventListener('load', function() {
+                      navigator.serviceWorker.register('/sw.js');
+                    });
+                  }
+                `,
+              }}
+            />
+          </>
+        )}
       </body>
     </html>
   );
